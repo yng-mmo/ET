@@ -1,101 +1,67 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Threading;
+﻿using System.Threading;
 using UnityEngine;
 
 namespace ET
 {
-	public interface IEntry
+	// 1 mono模式 2 ILRuntime模式 3 mono热重载模式
+	public enum CodeMode
 	{
-		void Start();
-		void Update();
-		void LateUpdate();
-		void OnApplicationQuit();
+		Mono = 1,
+		ILRuntime = 2,
+		Reload = 3,
 	}
 	
 	public class Init: MonoBehaviour
 	{
-		private IEntry entry;
+		public CodeMode CodeMode = CodeMode.Mono;
 		
 		private void Awake()
 		{
+#if ENABLE_IL2CPP
+			this.CodeMode = CodeMode.ILRuntime;
+#endif
+			
+			System.AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+			{
+				Log.Error(e.ExceptionObject.ToString());
+			};
+			
 			SynchronizationContext.SetSynchronizationContext(ThreadSynchronizationContext.Instance);
 			
 			DontDestroyOnLoad(gameObject);
+			
+			LitJson.UnityTypeBindings.Register();
 
-			Assembly modelAssembly = null;
+			ETTask.ExceptionHandler += Log.Error;
 
-			if (Define.IsEditor)
-			{
-				UnityEngine.Debug.Log("unity editor mode!");
-				foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-				{
-					string assemblyName = $"{assembly.GetName().Name}.dll";
-					if (assemblyName != "Unity.ModelView.dll")
-					{
-						continue;
-					}
+			Log.ILog = new UnityLogger();
 
-					modelAssembly = assembly;
-					break;
-				}
-			}
-			else
-			{
-				UnityEngine.Debug.Log("unity standalone mode!");
-				foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-				{
-					string assemblyName = $"{assembly.GetName().Name}.dll";
-					if (assemblyName != "Unity.ModelView.dll")
-					{
-						continue;
-					}
+			Options.Instance = new Options();
 
-					modelAssembly = assembly;
-					break;
-				}
-				
-				/*
-				byte[] log = new byte[1024];
-				Interpreter.InterpreterSetLog((buff, n) =>
-				{
-					Marshal.Copy(buff, log, 0, n);
-					UnityEngine.Debug.Log(log.Utf8ToStr(0, n));
-				});
-				Interpreter.InterpreterInit(@"E:\ET\Unity\UnityScript\", "Unity.Script.dll");
-				
-				
-				UnityEngine.Debug.Log("unity script mode!");
-				byte[] dllBytes = File.ReadAllBytes("./Temp/Bin/Debug/Unity.Script.dll");
-				byte[] pdbBytes = File.ReadAllBytes("./Temp/Bin/Debug/Unity.Script.pdb");
-				modelAssembly = Assembly.Load(dllBytes, pdbBytes);
-				*/
-			}
-
-			Type initType = modelAssembly.GetType("ET.Entry");
-			this.entry = Activator.CreateInstance(initType) as IEntry;
+			CodeLoader.Instance.CodeMode = this.CodeMode;
+			Options.Instance.Develop = 1;
+			Options.Instance.LogLevel = 0;
 		}
 
 		private void Start()
 		{
-			this.entry.Start();
+			CodeLoader.Instance.Start();
 		}
 
 		private void Update()
 		{
-			this.entry.Update();
+			CodeLoader.Instance.Update();
 		}
 
 		private void LateUpdate()
 		{
-			this.entry.LateUpdate();
+			CodeLoader.Instance.LateUpdate();
 		}
 
 		private void OnApplicationQuit()
 		{
-			this.entry.OnApplicationQuit();
+			CodeLoader.Instance.OnApplicationQuit();
+			CodeLoader.Instance.Dispose();
 		}
 	}
 }

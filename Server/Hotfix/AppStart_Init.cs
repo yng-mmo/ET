@@ -1,32 +1,22 @@
+using System;
 using System.Net;
 
 namespace ET
 {
     public class AppStart_Init: AEvent<EventType.AppStart>
     {
-        protected override async ETTask Run(EventType.AppStart args)
+        protected override void Run(EventType.AppStart args)
         {
-            switch (Game.Options.AppType)
-            {
-                case AppType.ExcelExporter:
-                {
-                    Game.Options.Console = 1;
-                    ExcelExporter.Export();
-                    return;
-                }
-                case AppType.Proto2CS:
-                {
-                    Game.Options.Console = 1;
-                    Proto2CS.Export();
-                    return;
-                }
-            }
-
+            RunAsync(args).Coroutine();
+        }
+        
+        private async ETTask RunAsync(EventType.AppStart args)
+        {
             Game.Scene.AddComponent<ConfigComponent>();
             await ConfigComponent.Instance.LoadAsync();
 
             StartProcessConfig processConfig = StartProcessConfigCategory.Instance.Get(Game.Options.Process);
-            
+
             Game.Scene.AddComponent<TimerComponent>();
             Game.Scene.AddComponent<OpcodeTypeComponent>();
             Game.Scene.AddComponent<MessageDispatcherComponent>();
@@ -43,6 +33,8 @@ namespace ET
             Game.Scene.AddComponent<NumericWatcherComponent>();
             
             Game.Scene.AddComponent<NetThreadComponent>();
+            
+            Game.Scene.AddComponent<NavmeshComponent, Func<string, byte[]>>(RecastFileReader.Read);
 
             switch (Game.Options.AppType)
             {

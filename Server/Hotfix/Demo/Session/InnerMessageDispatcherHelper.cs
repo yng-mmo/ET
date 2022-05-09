@@ -3,6 +3,7 @@ using System.IO;
 
 namespace ET
 {
+    [FriendClass(typeof(MailBoxComponent))]
     public static class InnerMessageDispatcherHelper
     {
         public static void HandleIActorResponse(ushort opcode, long actorId, IActorResponse iActorResponse)
@@ -15,7 +16,7 @@ namespace ET
             Entity entity = Game.EventSystem.Get(actorId);
             if (entity == null)
             {
-                FailResponse(iActorRequest, ErrorCode.ERR_NotFoundActor, reply);
+                FailResponse(iActorRequest, ErrorCore.ERR_NotFoundActor, reply);
                 return;
             }
 
@@ -23,7 +24,7 @@ namespace ET
             if (mailBoxComponent == null)
             {
                 Log.Warning($"actor not found mailbox: {entity.GetType().Name} {actorId} {iActorRequest}");
-                FailResponse(iActorRequest, ErrorCode.ERR_NotFoundActor, reply);
+                FailResponse(iActorRequest, ErrorCore.ERR_NotFoundActor, reply);
                 return;
             }
 
@@ -31,14 +32,14 @@ namespace ET
             {
                 case MailboxType.MessageDispatcher:
                 {
-                    async ETVoid MessageDispatcherHandler()
+                    async ETTask MessageDispatcherHandler()
                     {
                         long instanceId = entity.InstanceId;
                         using (await CoroutineLockComponent.Instance.Wait(CoroutineLockType.Mailbox, actorId))
                         {
                             if (entity.InstanceId != instanceId)
                             {
-                                FailResponse(iActorRequest, ErrorCode.ERR_NotFoundActor, reply);
+                                FailResponse(iActorRequest, ErrorCore.ERR_NotFoundActor, reply);
                                 return;
                             }
 
@@ -87,7 +88,7 @@ namespace ET
                 
                 case MailboxType.MessageDispatcher:
                 {
-                    async ETVoid MessageDispatcherHandler()
+                    async ETTask MessageDispatcherHandler()
                     {
                         long instanceId = entity.InstanceId;
                         using (await CoroutineLockComponent.Instance.Wait(CoroutineLockType.Mailbox, actorId))

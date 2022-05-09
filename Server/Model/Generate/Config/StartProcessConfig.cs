@@ -7,7 +7,7 @@ namespace ET
 {
     [ProtoContract]
     [Config]
-    public partial class StartProcessConfigCategory : ProtoObject
+    public partial class StartProcessConfigCategory : ProtoObject, IMerge
     {
         public static StartProcessConfigCategory Instance;
 		
@@ -23,16 +23,21 @@ namespace ET
         {
             Instance = this;
         }
+        
+        public void Merge(object o)
+        {
+            StartProcessConfigCategory s = o as StartProcessConfigCategory;
+            this.list.AddRange(s.list);
+        }
 		
-		[ProtoAfterDeserialization]
-        public void AfterDeserialization()
+        public override void EndInit()
         {
             foreach (StartProcessConfig config in list)
             {
+                config.EndInit();
                 this.dict.Add(config.Id, config);
-            }
-            list.Clear();
-            this.EndInit();
+            }            
+            this.AfterEndInit();
         }
 		
         public StartProcessConfig Get(int id)
@@ -70,20 +75,18 @@ namespace ET
     [ProtoContract]
 	public partial class StartProcessConfig: ProtoObject, IConfig
 	{
-		[ProtoMember(1, IsRequired  = true)]
+		/// <summary>Id</summary>
+		[ProtoMember(1)]
 		public int Id { get; set; }
-		[ProtoMember(2, IsRequired  = true)]
+		/// <summary>所属机器</summary>
+		[ProtoMember(2)]
 		public int MachineId { get; set; }
-		[ProtoMember(3, IsRequired  = true)]
+		/// <summary>内网端口</summary>
+		[ProtoMember(3)]
 		public int InnerPort { get; set; }
-		[ProtoMember(4, IsRequired  = true)]
+		/// <summary>程序名</summary>
+		[ProtoMember(4)]
 		public string AppName { get; set; }
 
-
-		[ProtoAfterDeserialization]
-        public void AfterDeserialization()
-        {
-            this.EndInit();
-        }
 	}
 }

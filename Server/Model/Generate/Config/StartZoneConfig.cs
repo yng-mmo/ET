@@ -7,7 +7,7 @@ namespace ET
 {
     [ProtoContract]
     [Config]
-    public partial class StartZoneConfigCategory : ProtoObject
+    public partial class StartZoneConfigCategory : ProtoObject, IMerge
     {
         public static StartZoneConfigCategory Instance;
 		
@@ -23,16 +23,21 @@ namespace ET
         {
             Instance = this;
         }
+        
+        public void Merge(object o)
+        {
+            StartZoneConfigCategory s = o as StartZoneConfigCategory;
+            this.list.AddRange(s.list);
+        }
 		
-		[ProtoAfterDeserialization]
-        public void AfterDeserialization()
+        public override void EndInit()
         {
             foreach (StartZoneConfig config in list)
             {
+                config.EndInit();
                 this.dict.Add(config.Id, config);
-            }
-            list.Clear();
-            this.EndInit();
+            }            
+            this.AfterEndInit();
         }
 		
         public StartZoneConfig Get(int id)
@@ -70,18 +75,15 @@ namespace ET
     [ProtoContract]
 	public partial class StartZoneConfig: ProtoObject, IConfig
 	{
-		[ProtoMember(1, IsRequired  = true)]
+		/// <summary>Id</summary>
+		[ProtoMember(1)]
 		public int Id { get; set; }
-		[ProtoMember(2, IsRequired  = true)]
+		/// <summary>数据库地址</summary>
+		[ProtoMember(2)]
 		public string DBConnection { get; set; }
-		[ProtoMember(3, IsRequired  = true)]
+		/// <summary>数据库名</summary>
+		[ProtoMember(3)]
 		public string DBName { get; set; }
 
-
-		[ProtoAfterDeserialization]
-        public void AfterDeserialization()
-        {
-            this.EndInit();
-        }
 	}
 }

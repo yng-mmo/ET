@@ -25,13 +25,15 @@ namespace ET
         }
     }
 
+    [FriendClass(typeof(ConsoleComponent))]
+    [FriendClass(typeof(ModeContex))]
     public static class ConsoleComponentSystem
     {
         public static void Load(this ConsoleComponent self)
         {
             self.Handlers.Clear();
 
-            HashSet<Type> types = EventSystem.Instance.GetTypes(typeof (ConsoleHandlerAttribute));
+            List<Type> types = EventSystem.Instance.GetTypes(typeof (ConsoleHandlerAttribute));
 
             foreach (Type type in types)
             {
@@ -54,7 +56,7 @@ namespace ET
             }
         }
         
-        public static async ETVoid Start(this ConsoleComponent self)
+        public static async ETTask Start(this ConsoleComponent self)
         {
             self.CancellationTokenSource = new CancellationTokenSource();
 
